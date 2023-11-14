@@ -213,7 +213,8 @@ class LoadInputsAndTargets(object):
 
         if self.load_output:
             ys = list(y_feats_dict.values())
-            assert len(xs[0]) == len(ys[0]), (len(xs[0]), len(ys[0]))
+            if self.load_input:
+                assert len(xs[0]) == len(ys[0]), (len(xs[0]), len(ys[0]))
 
             # get index of non-zero length samples
             nonzero_idx = list(filter(lambda i: len(ys[0][i]) > 0, range(len(ys[0]))))
@@ -224,17 +225,22 @@ class LoadInputsAndTargets(object):
             nonzero_idx = list(range(len(xs[0])))
 
         if self.sort_in_input_length:
-            # sort in input lengths based on the first input
-            nonzero_sorted_idx = sorted(nonzero_idx, key=lambda i: -len(xs[0][i]))
+            if self.load_input:
+                # sort in input lengths based on the first input
+                nonzero_sorted_idx = sorted(nonzero_idx, key=lambda i: -len(xs[0][i]))
+            else:
+                # sort in input lengths based on the first target
+                nonzero_sorted_idx = sorted(nonzero_idx, key=lambda i: -len(ys[0][i]))
         else:
             nonzero_sorted_idx = nonzero_idx
 
-        if len(nonzero_sorted_idx) != len(xs[0]):
-            logging.warning(
-                "Target sequences include empty tokenid (batch {} -> {}).".format(
-                    len(xs[0]), len(nonzero_sorted_idx)
+        if self.load_input:
+            if len(nonzero_sorted_idx) != len(xs[0]):
+                logging.warning(
+                    "Target sequences include empty tokenid (batch {} -> {}).".format(
+                        len(xs[0]), len(nonzero_sorted_idx)
+                    )
                 )
-            )
 
         # remove zero-length samples
         xs = [[x[i] for i in nonzero_sorted_idx] for x in xs]
